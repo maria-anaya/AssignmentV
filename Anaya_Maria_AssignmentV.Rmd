@@ -73,3 +73,92 @@ EventGermany_response<-select(EventGermany_response,name=X_embedded.venues.name,
 glimpse(EventGermany_response)
 
 ```
+
+4. Interacting with the API - advanced
+
+In order to get the remaining results pages, I add into the query list, the parameter page, so that the loop will add each page. 
+The function Sys.sleep is used, so that the rate limit is respected. 
+
+```{r 4APIAdvanced,error=FALSE}
+# request the venues from the remaining results pages
+#page is page number and size page size
+#empty table missing
+
+n<-12175
+
+GermanyDF<-
+  data.frame(
+    X_embedded.venues.name= character(n),
+    X_embedded.venues.city.name = character (n)  ,
+    X_embedded.venues.postalCode= character(n),
+    X_embedded.venues.address.line1 = character(n),
+    X_embedded.venues.url = character (n),
+    X_embedded.venues.location.longitude = character(n),
+    X_embedded.venues.location.latitude = character(n),
+    stringsAsFactors = FALSE
+  ) 
+    
+ for (i in 1:8) { 
+   
+   
+ test<- GET(url="https://app.ticketmaster.com/discovery/v2/venues.json?",
+                                  query=list(apikey=KeyAPI,
+                                             countryCode="DE",
+                                             locale="*",
+                                             size=25,
+                                             location="*",
+                                             page=(i - 1),
+                                             start=((i-1)*25+1)))
+ 
+ 
+ jsoncontentsearch<- content(test, as = "text", encoding = "UTF-8")
+ 
+   
+ jsoncontentsearch<-jsonlite::fromJSON(jsoncontentsearch,flatten=TRUE)%>%
+   data.frame()%>%
+   select(X_embedded.venues.name,X_embedded.venues.city.name,X_embedded.venues.postalCode,X_embedded.venues.address.line1,X_embedded.venues.url,X_embedded.venues.location.longitude,X_embedded.venues.location.latitude)
+
+
+  GermanyDF[((i - 1) * 25+1 ):(i * 25), ] <- jsoncontentsearch
+  
+
+  Sys.sleep(0.2)
+ }   
+
+# Structure of complete data frame
+glimpse(GermanyDF)
+
+```
+
+## 5. Visualizing the extracted data
+
+By adding a geom_point with the data frame obtained, the locations of event venues across Germany are added. 
+We check that the longitude and latitude respect the ranges of limit.
+```{r 5VisData, error=FALSE}
+
+# Visualizing the extracted data
+
+# Convert latitude and longitude to numeric values
+GermanyDF$X_embedded.venues.location.longitude<-as.numeric(GermanyDF$X_embedded.venues.location.longitude) 
+GermanyDF$X_embedded.venues.location.latitude<-as.numeric(GermanyDF$X_embedded.venues.location.latitude)
+
+
+ggplot() +
+geom_polygon(
+aes(x = long, y = lat, group = group), data = map_data("world", region= "Germany"),
+fill = "grey90",color = "black") + 
+geom_point(data=GermanyDF, x= GermanyDF$X_embedded.venues.location.longitude, y= GermanyDF$X_embedded.venues.location.latitude, na.rm = TRUE,color="blue",size=2.5)+
+theme_void() + coord_quickmap() +
+labs(title = "Event locations across Germany", caption = "Source: ticketmaster.com") +
+theme(title = element_text(size=8, face='bold'),
+plot.caption = element_text(face = "italic"))
+```
+
+```{r Long lat, error=FALSE,echo=TRUE,eval=FALSE}
+# Check values of longitude
+between(GermanyDF$X_embedded.venues.location.longitude,5.866944,15.043611)
+
+# Check values of latitude
+between(GermanyDF$X_embedded.venues.location.latitude,47.271679,55.0846)
+
+```
