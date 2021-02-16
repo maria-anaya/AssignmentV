@@ -26,3 +26,50 @@ rm(list = ls())
 source('~/AssignmentV/script key.R')
 
 ```
+
+## 3. Interacting with the API - the basics
+
+Before going ahead,we check if the request has been successful by checking its status. When aplying the function content(), we can see the structure of the elements (embedded, venues, name, etc), for each event venue. Once we also apply the function fromJSON(), we get different lists contained embedded, pages and links.
+
+```{r 3APIBasics,warning=FALSE,error=FALSE,message=FALSE}
+
+# Loading packages needed
+library(httr)
+library(tibble)
+library(dplyr)
+library(rlist)
+library(tidyverse)
+library(ggplot2)
+
+
+
+# GET request with everything 
+EventGermany<- GET(url="https://app.ticketmaster.com/discovery/v2/venues.json?",
+                                 query=list(apikey=KeyAPI,
+                                            countryCode="DE",
+                                            locale="*"
+                                            ))
+
+
+# Check with status if query is successfully executed                           
+status_code(EventGermany)
+
+
+# Convert with content function
+EventGermany_response<-content(EventGermany, as = "text", encoding = "UTF-8")
+
+
+print(EventGermany)
+
+# Convert with fromJSON function
+EventGermany_response<-jsonlite::fromJSON(EventGermany_response,flatten=TRUE) 
+
+EventGermany_response<-EventGermany_response%>%data.frame()
+
+# Extract information 
+EventGermany_response<-select(EventGermany_response,name=X_embedded.venues.name,city=X_embedded.venues.city.name,postalCode=X_embedded.venues.postalCode,address=X_embedded.venues.address.line1,url=X_embedded.venues.url,longitude=X_embedded.venues.location.longitude,latitude=X_embedded.venues.location.latitude)
+
+# Structure of data frame obtained
+glimpse(EventGermany_response)
+
+```
