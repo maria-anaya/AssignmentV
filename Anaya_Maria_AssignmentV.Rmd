@@ -162,3 +162,106 @@ between(GermanyDF$X_embedded.venues.location.longitude,5.866944,15.043611)
 between(GermanyDF$X_embedded.venues.location.latitude,47.271679,55.0846)
 
 ```
+
+## 6. Event locations in other countries
+
+The country chosen is Italy. 
+The informations that are changed, are minimized to the names of the data frames and the parameter countryCOde in the function GET.
+
+Extreme points are deleted by doing a test if the value is between the limits. If it is false, the row is deleted.
+
+```{r 6EventLoc, error=FALSE}
+
+# Repeat exercises 2 to 5 for another European country of your choice.
+
+EventItaly<-GET(url="https://app.ticketmaster.com/discovery/v2/venues.json?",
+                                 query=list(apikey=KeyAPI,
+                                            countryCode="IT",
+                                            locale="*"
+                                            ))
+
+# Check with status if query is successfully executed                           
+status_code(EventItaly)
+
+
+# Convert with content function
+EventItaly_response<-content(EventItaly, as = "text", encoding = "UTF-8")
+
+
+print(EventItaly)
+
+# Convert with fromJSON function
+EventItaly_response<-jsonlite::fromJSON(EventItaly_response,flatten=TRUE) 
+
+EventItaly_response<-EventItaly_response%>%data.frame()
+
+# Extract information 
+EventItaly_response<-select(EventItaly_response,name=X_embedded.venues.name,city=X_embedded.venues.city.name,postalCode=X_embedded.venues.postalCode,address=X_embedded.venues.address.line1,url=X_embedded.venues.url,longitude=X_embedded.venues.location.longitude,latitude=X_embedded.venues.location.latitude)
+
+# Structure of data frame obtained
+glimpse(EventItaly_response)
+
+n<-12175
+
+ItalyDF<-
+  data.frame(
+    X_embedded.venues.name= character(n),
+    X_embedded.venues.city.name = character (n)  ,
+    X_embedded.venues.postalCode= character(n),
+    X_embedded.venues.address.line1 = character(n),
+    X_embedded.venues.url = character (n),
+    X_embedded.venues.location.longitude = character(n),
+    X_embedded.venues.location.latitude = character(n),
+    stringsAsFactors = FALSE
+  ) 
+    
+ for (i in 1:2) { 
+   
+   
+ test<- GET(url="https://app.ticketmaster.com/discovery/v2/venues.json?",
+                                  query=list(apikey=KeyAPI,
+                                             countryCode="IT",
+                                             locale="*",
+                                             size=25,
+                                             page=(i - 1),
+                                             start=((i-1)*25+1)))
+ 
+ 
+ jsoncontentsearch<- content(test, as = "text", encoding = "UTF-8")
+ 
+   
+ jsoncontentsearch<-jsonlite::fromJSON(jsoncontentsearch,flatten=TRUE)%>%
+   data.frame()%>%
+   select(X_embedded.venues.name,X_embedded.venues.city.name,X_embedded.venues.postalCode,X_embedded.venues.address.line1,X_embedded.venues.url,X_embedded.venues.location.longitude,X_embedded.venues.location.latitude)
+
+
+  ItalyDF[((i - 1) * 25+1 ):(i * 25), ] <- jsoncontentsearch
+  
+
+  Sys.sleep(0.2)
+ }   
+
+# Convert latitude and longitude to numeric values
+ItalyDF$X_embedded.venues.location.longitude<-as.numeric(ItalyDF$X_embedded.venues.location.longitude) 
+ItalyDF$X_embedded.venues.location.latitude<-as.numeric(ItalyDF$X_embedded.venues.location.latitude)
+
+```
+
+```{r 6Long lat, error=FALSE,echo=TRUE,eval=FALSE}
+# Check  latitude and longitude
+ItalyDF$lat_it<between(ItalyDF$X_embedded.venues.location.latitude,47.5,37.56)
+ItalyDF$lon_it<-between(ItalyDF$X_embedded.venues.location.longitude,6.37,18.31)
+```
+
+```{r 6 plot, error=FALSE}
+ggplot() +
+geom_polygon(
+aes(x = long, y = lat,group=group), data = map_data("world", region= "Italy"),
+fill = "grey90",color = "black") +
+geom_point(data=ItalyDF, x= ItalyDF$X_embedded.venues.location.longitude, y= ItalyDF$X_embedded.venues.location.latitude, na.rm = TRUE,color="blue",size=2.5)+
+theme_void()  +coord_quickmap()+
+labs(title = "Event locations across Italy", caption = "Source: ticketmaster.com") +
+theme(title = element_text(size=8, face='bold'),
+plot.caption = element_text(face = "italic"))
+
+```
