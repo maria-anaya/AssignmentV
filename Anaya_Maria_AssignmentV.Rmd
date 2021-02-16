@@ -9,3 +9,20 @@ output: html_document
 A GitHub repository has been set up under the following link: https://github.com/maria-anaya/AssignmentV.git.
 
 
+## 2. Getting to know the API
+
+We can get the information of the following tables thanks to API: products, offers, events, attractions, areas, passwords, images, segments, venues, price-zones, prices, genres and sub-genres.
+Filters can be applied. 
+
+The rate limit is of 5000 calls of API per day and 5 requests per second.
+
+In order to keep the key API secret, it is saved within another script
+
+
+```{r 2API}
+rm(list = ls())
+
+# API key stored in another source
+source('~/AssignmentV/script key.R')
+
+```
