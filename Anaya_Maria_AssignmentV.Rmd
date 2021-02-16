@@ -1,0 +1,11 @@
+---
+title: "Assignment V"
+author: "Maria Anaya"
+output: html_document
+---
+
+## 1. Setting up a new GitHub repository
+
+A GitHub repository has been set up under the following link: https://github.com/maria-anaya/AssignmentV.git.
+
+
